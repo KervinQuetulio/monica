@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="complaintApp">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Form</title>
+
+    <!-- Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="main.js"></script>
+</head>
+
+
+</head>
+
+<body class="bg-gray-100" ng-controller="ComplaintController" ng-cloak>
+    <!-- Navbar -->
+    <nav class="bg-blue-600 text-white p-4 shadow-md">
+        <h1 class="text-2xl font-bold">Complaint Management</h1>
+    </nav>
+
+
+    <div ng-if="loggedIn && agent.name === 'admin'">
+        <h2 class="text-xl font-bold mb-4 text-center">Reports</h2>
+
+        <div class="p-4 bg-white rounded-lg shadow-md">
+            <p>Total Complaints: {{complaints.length}}</p>
+            <p>Open Complaints: {{getComplaintsByStatus('Open')}}</p>
+            <p>Resolved Complaints: {{getComplaintsByStatus('Resolved')}}</p>
+            <p>In-progress Complaints: {{getComplaintsByStatus('In-progress')}}</p>
+            <p>Closed Complaints: {{getComplaintsByStatus('Closed')}}</p>
+
+        </div>
+        <canvas id="complaintChart" complaint-chart></canvas>
+    </div>
+
+    <div class="container mx-auto px-4 my-12">
+        <!-- Admin Dashboard -->
+        <div ng-if="loggedIn && agent.name === 'admin'" ng-show="!showForm">
+            <h2 class="text-xl font-bold mb-4 text-center">Admin Dashboard</h2>
+            <table class="min-w-full bg-white rounded-lg shadow-md overflow-hidden mt-4">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2">Ticket #</th>
+                        <th class="px-4 py-2">Status</th>
+                        <th class="px-4 py-2">Assigned To</th>
+                        <th class="px-4 py-2">Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="complaint in complaints track by $index">
+                        <td class="border-t px-4 py-2">{{complaint.ticketNumber}}</td>
+                        <td class="border-t px-4 py-2">{{complaint.status}}</td>
+                        <td class="border-t px-4 py-2">{{complaint.assignedTo || 'Not Assigned'}}</td>
+                        <td class="border-t px-4 py-2">{{complaint.priority || 'Normal'}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div> 
+
+        <!-- Login Form -->
+        <div ng-show="!loggedIn" class="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+            <form ng-submit="loginAgent()">
+                <h2 class="text-xl font-bold mb-4 text-center">Agent Login</h2>
+
+
+                <!-- Agent Name -->
+                <div class="mb-4">
+                    <label for="agentName" class="block mb-1 font-medium">Agent Name:</label>
+                    <input type="text" ng-model="agent.name" required class="p-2 border rounded-md w-full">
+                </div>
+
+                <!-- Agent Email -->
+                <div class="mb-4">
+                    <label for="agentEmail" class="block mb-1 font-medium">Agent Email:</label>
+                    <input type="email" ng-model="agent.email" required class="p-2 border rounded-md w-full">
+                </div>
+
+                <!-- Agent Password (just for demonstration, handle with care) -->
+                <div class="mb-4">
+                    <label for="agentPassword" class="block mb-1 font-medium">Password:</label>
+                    <input type="password" ng-model="agent.password" required class="p-2 border rounded-md w-full">
+                </div>
+
+                <div class="mt-4">
+                    <input type="submit" value="Login"
+                        class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition">
+                </div>
+            </form>
+        </div>
+
+        <div ng-if="loggedIn">
+            <div id="popupForm" ng-show="showForm" class="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+                <form id="complaintForm" ng-submit="submitForm()">
+                    <h2 class="text-lg font-bold mb-4">Complaint Form</h2>
+
+                    <!-- Ticket Number (Automatic Input) -->
+                    <div class="mb-4">
+                        <label for="ticketNumber" class="block mb-1 font-medium">Ticket Number:</label>
+                        <input type="text" ng-model="complaintForm.ticketNumber" disabled
+                            class="p-2 border rounded-md w-full bg-gray-200">
+                    </div>
+
+                    <!-- Date (Automatic Input) -->
+                    <div class="mb-4">
+                        <label for="date" class="block mb-1 font-medium">Date:</label>
+                        <input type="date" ng-model="complaintForm.date" class="p-2 border rounded-md w-full">
+                        <!-- Changed to date type -->
+                    </div>
+
+                    <!-- Caller Number -->
+                    <div class="mb-4">
+                        <label for="callerNumber" class="block mb-1 font-medium">Caller Number:</label>
+                        <input type="text" ng-model="complaintForm.callerNumber" required
+                            class="p-2 border rounded-md w-full">
+                    </div>
+
+                    <!-- Caller Name -->
+                    <div class="mb-4">
+                        <label for="callerName" class="block mb-1 font-medium">Caller Name:</label>
+                        <input type="text" ng-model="complaintForm.callerName" required
+                            class="p-2 border rounded-md w-full">
+                    </div>
+
+                    <!-- Gender -->
+                    <div class="mb-4">
+                        <label class="block mb-1 font-medium">Gender:</label>
+                        <label class="inline-block mr-4">
+                            <input type="radio" ng-model="complaintForm.gender" value="male" class="mr-1"> Male
+                        </label>
+                        <label class="inline-block mr-4">
+                            <input type="radio" ng-model="complaintForm.gender" value="female" class="mr-1"> Female
+                        </label>
+                    </div>
+
+                    <!-- Complaint with a drop down -->
+                    <div class="mb-4">
+                        <label for="complaint" class="block mb-1 font-medium">Complaint:</label>
+                        <select ng-model="complaintForm.complaint" class="p-2 border rounded-md w-full">
+                            <option value="telcoComplaint">TELCO COMPLAINT</option>
+                            <option value="lostStolen">LOST/STOLEN PHONE</option>
+                            <option value="textScam">TEXT SCAM / SPAM</option>
+                            <option value="blocking">BLOCKING</option>
+                        </select>
+                    </div>
+
+
+                    <!-- Recommendation -->
+                    <div class="mb-4">
+                        <label for="recommendation" class="block mb-1 font-medium">Recommendation:</label>
+                        <textarea ng-model="complaintForm.recommendation" rows="4"
+                            class="p-2 border rounded-md w-full"></textarea>
+                    </div>
+
+                    <!-- Status dropdown -->
+                    <div class="mb-4">
+                        <label for="status" class="block mb-1 font-medium">Status:</label>
+                        <select ng-model="complaintForm.status" class="p-2 border rounded-md w-full">
+                            <option value="Open">Open</option>
+                            <option value="In-progress">In-progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+
+
+                    <div class="text-right">
+                        <input type="submit" value="Submit"
+                            class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition">
+
+                            <button ng-click="toggleCancelForm()"
+                            class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+              
+            </div>
+
+            <div ng-show="!showForm" class="mt-10">
+                <button ng-click="toggleForm()"
+                    class="mb-4 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition">
+                    Open Form
+                </button>
+
+                <div class="mb-4">
+                    <input type="text" ng-model="searchText" placeholder="Search complaints..."
+                        class="p-2 border rounded-md w-full">
+                </div>
+                <!-- Table for displaying complaints -->
+                <table class="min-w-full bg-white rounded-lg shadow-md overflow-hidden">
+
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-2">Ticket #</th>
+                            <th class="px-4 py-2">Date/Time</th>
+                            <th class="px-4 py-2">Caller Number</th>
+                            <th class="px-4 py-2">Caller Name</th>
+                            <th class="px-4 py-2">Gender</th>
+                            <th class="px-4 py-2">Complaint</th>
+                            <th class="px-4 py-2">Recommendation</th>
+                            <th class="px-4 py-2">Status</th>
+                            <th class="px-4 py-2">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            ng-repeat="complaint in complaints | filter:searchText | startFrom:currentPage*itemsPerPage | limitTo:itemsPerPage track by $index">
+                            <td class="border-t px-4 py-2">{{complaint.ticketNumber}}</td>
+                            <td class="border-t px-4 py-2">{{complaint.date | date:'MMMM d, y'}}</td>
+                            <td class="border-t px-4 py-2">{{complaint.callerNumber}}</td>
+                            <td class="border-t px-4 py-2">{{complaint.callerName}}</td>
+                            <td class="border-t px-4 py-2">{{complaint.gender}}</td>
+                            <td class="border-t px-4 py-2">{{complaint.complaint}}</td>
+                            <td class="border-t px-4 py-2">{{complaint.recommendation}}</td>
+                            <td class="border-t px-4 py-2">{{complaint.status}}</td>
+                            <td class="border-t px-4 py-2">
+                                <button ng-click="editComplaint($index)"
+                                    class="bg-yellow-500 text-white py-1 px-3 rounded-md hover:bg-yellow-600 transition">
+                                    Edit
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="mt-4 flex justify-between items-center">
+                    <button ng-disabled="currentPage == 0" ng-click="currentPage=currentPage-1"
+                        class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition">
+                        Previous
+                    </button>
+                    <span>{{currentPage+1}}/{{numberOfPages()}}</span>
+                    <button ng-disabled="currentPage >= complaints.length/itemsPerPage - 1"
+                        ng-click="currentPage=currentPage+1"
+                        class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition">
+                        Next
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

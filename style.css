@@ -1,0 +1,32 @@
+nav {
+    background-color: #0051BA;
+    color: #FFFFFF;
+}
+
+button,
+input[type="submit"] {
+    background-color: #E21B3C;
+    color: #FFFFFF;
+    transition: background-color 0.3s ease;
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background-color: #0051BA;
+}
+
+.max-w-md,
+table {
+    background-color: #FFFFFF;
+}
+
+input,
+textarea,
+select {
+    border-color: #0051BA;
+}
+
+thead {
+    background-color: #E21B3C;
+    color: #FFFFFF;
+}
